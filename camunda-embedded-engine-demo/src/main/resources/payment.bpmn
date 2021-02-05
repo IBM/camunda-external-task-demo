@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<bpmn:definitions xmlns:bpmn="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:camunda="http://camunda.org/schema/1.0/bpmn" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_0aui0ws" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="3.5.0">
+  <bpmn:process id="payment-retrieval" name="Payment Retrieval" isExecutable="true" camunda:versionTag="0.2">
+    <bpmn:startEvent id="StartEvent_1" name="Payment Retrieval Requested">
+      <bpmn:outgoing>SequenceFlow_1p2szow</bpmn:outgoing>
+    </bpmn:startEvent>
+    <bpmn:serviceTask id="Task_19pt1nu" name="Charge Credit Card" camunda:type="external" camunda:topic="charge-card">
+      <bpmn:incoming>SequenceFlow_153jit1</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_1axd8hr</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:endEvent id="EndEvent_1oyw02k" name="Payment Received">
+      <bpmn:incoming>SequenceFlow_1axd8hr</bpmn:incoming>
+    </bpmn:endEvent>
+    <bpmn:sequenceFlow id="SequenceFlow_1axd8hr" sourceRef="Task_19pt1nu" targetRef="EndEvent_1oyw02k" />
+    <bpmn:serviceTask id="Task_0q4zvgp" name="Check Credit Card" camunda:type="external" camunda:topic="check-card">
+      <bpmn:incoming>SequenceFlow_19cx4un</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_04u8b2b</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:serviceTask id="Task_13dkd1d" name="Check Item Info" camunda:type="external" camunda:topic="check-item">
+      <bpmn:incoming>SequenceFlow_048irvs</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_0retfd4</bpmn:outgoing>
+    </bpmn:serviceTask>
+    <bpmn:sequenceFlow id="SequenceFlow_1p2szow" sourceRef="StartEvent_1" targetRef="ExclusiveGateway_026z77s" />
+    <bpmn:sequenceFlow id="SequenceFlow_19cx4un" sourceRef="ExclusiveGateway_026z77s" targetRef="Task_0q4zvgp" />
+    <bpmn:sequenceFlow id="SequenceFlow_048irvs" sourceRef="ExclusiveGateway_026z77s" targetRef="Task_13dkd1d" />
+    <bpmn:sequenceFlow id="SequenceFlow_04u8b2b" sourceRef="Task_0q4zvgp" targetRef="ExclusiveGateway_01gbf3a" />
+    <bpmn:sequenceFlow id="SequenceFlow_0retfd4" sourceRef="Task_13dkd1d" targetRef="ExclusiveGateway_01gbf3a" />
+    <bpmn:sequenceFlow id="SequenceFlow_153jit1" sourceRef="ExclusiveGateway_01gbf3a" targetRef="Task_19pt1nu" />
+    <bpmn:parallelGateway id="ExclusiveGateway_026z77s">
+      <bpmn:incoming>SequenceFlow_1p2szow</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_19cx4un</bpmn:outgoing>
+      <bpmn:outgoing>SequenceFlow_048irvs</bpmn:outgoing>
+    </bpmn:parallelGateway>
+    <bpmn:parallelGateway id="ExclusiveGateway_01gbf3a">
+      <bpmn:incoming>SequenceFlow_04u8b2b</bpmn:incoming>
+      <bpmn:incoming>SequenceFlow_0retfd4</bpmn:incoming>
+      <bpmn:outgoing>SequenceFlow_153jit1</bpmn:outgoing>
+    </bpmn:parallelGateway>
+  </bpmn:process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="payment-retrieval">
+      <bpmndi:BPMNShape id="_BPMNShape_StartEvent_2" bpmnElement="StartEvent_1">
+        <dc:Bounds x="164" y="201" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="155" y="237" width="54" height="40" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_17yjgnl_di" bpmnElement="Task_19pt1nu">
+        <dc:Bounds x="671" y="168" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1oyw02k_di" bpmnElement="EndEvent_1oyw02k">
+        <dc:Bounds x="938" y="190" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="933" y="236" width="47" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1axd8hr_di" bpmnElement="SequenceFlow_1axd8hr">
+        <di:waypoint x="771" y="208" />
+        <di:waypoint x="938" y="208" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="345.5" y="98.5" width="90" height="13" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ServiceTask_1m8bv3v_di" bpmnElement="Task_0q4zvgp">
+        <dc:Bounds x="367" y="79" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_0fdjnfu_di" bpmnElement="Task_13dkd1d">
+        <dc:Bounds x="367" y="283" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="SequenceFlow_1p2szow_di" bpmnElement="SequenceFlow_1p2szow">
+        <di:waypoint x="200" y="219" />
+        <di:waypoint x="250" y="219" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_19cx4un_di" bpmnElement="SequenceFlow_19cx4un">
+        <di:waypoint x="275" y="194" />
+        <di:waypoint x="275" y="119" />
+        <di:waypoint x="367" y="119" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_048irvs_di" bpmnElement="SequenceFlow_048irvs">
+        <di:waypoint x="275" y="244" />
+        <di:waypoint x="275" y="323" />
+        <di:waypoint x="367" y="323" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_04u8b2b_di" bpmnElement="SequenceFlow_04u8b2b">
+        <di:waypoint x="467" y="119" />
+        <di:waypoint x="559" y="119" />
+        <di:waypoint x="559" y="183" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_0retfd4_di" bpmnElement="SequenceFlow_0retfd4">
+        <di:waypoint x="467" y="323" />
+        <di:waypoint x="559" y="323" />
+        <di:waypoint x="559" y="233" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="SequenceFlow_153jit1_di" bpmnElement="SequenceFlow_153jit1">
+        <di:waypoint x="584" y="208" />
+        <di:waypoint x="671" y="208" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNShape id="ParallelGateway_1qrwio3_di" bpmnElement="ExclusiveGateway_026z77s">
+        <dc:Bounds x="250" y="194" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ParallelGateway_0jim9jc_di" bpmnElement="ExclusiveGateway_01gbf3a">
+        <dc:Bounds x="534" y="183" width="50" height="50" />
+      </bpmndi:BPMNShape>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</bpmn:definitions>

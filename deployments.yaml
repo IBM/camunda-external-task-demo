@@ -1,0 +1,370 @@
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: camunda-web-config
+data:
+  bpm-platform.xml: |
+    <?xml version="1.0" encoding="UTF-8"?>
+    <bpm-platform xmlns="http://www.camunda.org/schema/1.0/BpmPlatform" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+      xsi:schemaLocation="http://www.camunda.org/schema/1.0/BpmPlatform http://www.camunda.org/schema/1.0/BpmPlatform ">
+    
+      <job-executor>
+        <job-acquisition name="default" />
+      </job-executor>
+    
+      <process-engine name="default">
+        <job-acquisition>default</job-acquisition>
+        <configuration>org.camunda.bpm.engine.impl.cfg.StandaloneProcessEngineConfiguration</configuration>
+        <datasource>java:jdbc/ProcessEngine</datasource>
+    
+        <properties>
+          <property name="history">audit</property>
+          <property name="databaseSchemaUpdate">true</property>
+          <property name="authorizationEnabled">true</property>
+        </properties>
+    
+        <plugins>
+          <!-- plugin enabling Process Application event listener support -->
+          <plugin>
+            <class>org.camunda.bpm.application.impl.event.ProcessApplicationEventListenerPlugin</class>
+          </plugin>
+    
+          <!-- plugin enabling integration of camunda Spin -->
+          <plugin>
+            <class>org.camunda.spin.plugin.impl.SpinProcessEnginePlugin</class>
+          </plugin>
+    
+          <!-- plugin enabling connect support -->
+          <plugin>
+            <class>org.camunda.connect.plugin.impl.ConnectProcessEnginePlugin</class>
+          </plugin>
+    
+        </plugins>
+    
+    
+      </process-engine>
+    
+    </bpm-platform>
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: postgresql-db-deployment
+  labels:
+    app: postgresql-db
+spec:
+  selector:
+    matchLabels:
+      app: postgresql-db
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+      labels:
+        app: postgresql-db
+    spec:
+      initContainers:
+      - name: initcontainer # Or replace the name
+        image: alpine:latest
+        command: ["/bin/sh", "-c"]
+        args:
+          - chown 1001:1001 /mount; # Replace UID and GID with values from the Dockerfile
+        volumeMounts:
+        - name: postgresql-db-storage # Or you can replace with any name
+          mountPath: /mount # Must match the mount path in the args line
+      containers:
+      - name: postgresql-db-container
+        image: bitnami/postgresql:latest
+        volumeMounts:
+        - name: postgresql-db-storage
+          mountPath: /bitnami/postgresql
+        ports:
+        - containerPort: 5432
+        env:
+        - name: POSTGRESQL_DATABASE
+          valueFrom:
+            configMapKeyRef:
+              name: os-postgresql-config
+              key: POSTGRESQL_DBNAME
+        - name: POSTGRESQL_USER
+          valueFrom:
+            configMapKeyRef:
+              name: os-postgresql-config
+              key: POSTGRESQL_USER
+        - name: POSTGRESQL_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: os-postgresql-config
+              key: POSTGRESQL_PASSWORD
+      volumes:
+        - name: postgresql-db-storage
+          persistentVolumeClaim:
+            claimName: camunda-engine-db
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: camunda-web-deployment
+  labels:
+    app: camunda-web
+spec:
+  selector:
+    matchLabels:
+      app: camunda-web
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+      labels:
+        app: camunda-web
+    spec:
+      volumes:
+        - name: camunda-web-config-vol
+          configMap:
+            name: camunda-web-config
+      containers:
+      - name: camunda-web-container
+        image:  camunda/camunda-bpm-platform:7.12.0
+        ports:
+        - containerPort: 8080
+        env:
+        - name: DB_DRIVER
+          valueFrom:
+            configMapKeyRef:
+              name: os-postgresql-config
+              key: POSTGRESQL_DRIVER
+        - name: DB_URL
+          valueFrom:
+            configMapKeyRef:
+              name: os-postgresql-config
+              key: POSTGRESQL_DB_URL
+        - name: DB_USERNAME
+          valueFrom:
+            configMapKeyRef:
+              name: os-postgresql-config
+              key: POSTGRESQL_USER
+        - name: DB_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: os-postgresql-config
+              key: POSTGRESQL_PASSWORD
+        - name: WAIT_FOR
+          valueFrom:
+            configMapKeyRef:
+              name: os-postgresql-config
+              key: POSTGRESQL_HOST_PORT
+        - name: WAIT_FOR_TIMEOUT
+          value: "60"
+        volumeMounts:
+        - name: camunda-web-config-vol
+          mountPath: /camunda/conf/bpm-platform.xml
+          subPath: bpm-platform.xml
+---
+kind: ConfigMap
+apiVersion: v1
+metadata:
+  name: os-postgresql-config
+data:
+  POSTGRESQL_DBNAME: "os"
+  POSTGRESQL_PASSWORD: "demo"
+  POSTGRESQL_PORT: "5432"
+  POSTGRESQL_HOST: "postgresql-db-service"
+  POSTGRESQL_USER: "postgres"
+  POSTGRESQL_DRIVER: "org.postgresql.Driver"
+  POSTGRESQL_DB_URL: "jdbc:postgresql://postgresql-db-service:5432/os"
+  POSTGRESQL_HOST_PORT: "postgresql-db-service:5432"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: camunda-embedded-engine-demo-deployment
+  labels:
+    app: camunda-embedded-engine-demo
+spec:
+  selector:
+    matchLabels:
+      app: camunda-embedded-engine-demo
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+      labels:
+        app: camunda-embedded-engine-demo
+    spec:
+      containers:
+      - name: camunda-embedded-engine-demo-container
+        image: image-registry.openshift-image-registry.svc:5000/camunda-demo/camunda-embedded-engine-demo:latest
+        env:
+        - name: POSTGRESQL_DBNAME
+          valueFrom:
+            configMapKeyRef:
+              name: os-postgresql-config
+              key: POSTGRESQL_DBNAME
+        - name: POSTGRESQL_PASSWORD
+          valueFrom:
+            configMapKeyRef:
+              name: os-postgresql-config
+              key: POSTGRESQL_PASSWORD
+        - name: POSTGRESQL_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: os-postgresql-config
+              key: POSTGRESQL_PORT
+        - name: POSTGRESQL_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: os-postgresql-config
+              key: POSTGRESQL_HOST
+        - name: POSTGRESQL_USER
+          valueFrom:
+            configMapKeyRef:
+              name: os-postgresql-config
+              key: POSTGRESQL_USER
+        ports:
+        - containerPort: 9080
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-check-card-worker-deployment
+  labels:
+    app: simple-check-card-worker
+spec:
+  selector:
+    matchLabels:
+      app: simple-check-card-worker
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+      labels:
+        app: simple-check-card-worker
+    spec:
+      containers:
+      - name: check-card-worker-container
+        image: image-registry.openshift-image-registry.svc:5000/camunda-demo/simple-check-card-worker:latest
+        env:
+        - name: BASE_URL
+          value: "http://camunda-embedded-engine-demo-service:9080/camunda-embedded-engine-demo/webapi"
+        - name: LOCK_DURATION
+          value: "30"
+        - name: LONG_POLLING_TIMEOUT
+          value: "120"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-check-item-worker-deployment
+  labels:
+    app: simple-check-item-worker
+spec:
+  selector:
+    matchLabels:
+      app: simple-check-item-worker
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+      labels:
+        app: simple-check-item-worker
+    spec:
+      containers:
+      - name: simple-check-item-worker-container
+        image: image-registry.openshift-image-registry.svc:5000/camunda-demo/simple-check-item-worker:latest
+        env:
+        - name: BASE_URL
+          value: "http://camunda-embedded-engine-demo-service:9080/camunda-embedded-engine-demo/webapi"
+        - name: LOCK_DURATION
+          value: "30"
+        - name: LONG_POLLING_TIMEOUT
+          value: "120"
+        resources:
+          limits:
+            cpu: 500m
+            memory: 512Mi
+          requests:
+            cpu: 250m
+            memory: 250Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: simple-charge-card-worker-deployment
+  labels:
+    app: simple-charge-card-worker
+spec:
+  selector:
+    matchLabels:
+      app: simple-charge-card-worker
+  template:
+    metadata:
+      annotations:
+        sidecar.istio.io/inject: "true"
+      labels:
+        app: simple-charge-card-worker
+    spec:
+      containers:
+      - name: simple-charge-card-worker-container
+        image: image-registry.openshift-image-registry.svc:5000/camunda-demo/simple-charge-card-worker:latest
+        env:
+        - name: BASE_URL
+          value: "http://camunda-embedded-engine-demo-service:9080/camunda-embedded-engine-demo/webapi"
+        - name: LOCK_DURATION
+          value: "30"
+        - name: LONG_POLLING_TIMEOUT
+          value: "120"
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: camunda-embedded-engine-demo-service
+spec:
+  selector:
+    app: camunda-embedded-engine-demo
+  ports:
+  - name: http
+    port: 9080
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: postgresql-db-service
+spec:
+  selector:
+    app: postgresql-db
+  ports:
+  - name: tcp
+    port: 5432
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: camunda-web-service
+spec:
+  selector:
+    app: camunda-web
+  ports:
+  - name: http
+    port: 8080
+---
+apiVersion: v1
+kind: Route
+metadata:
+  name: camunda-embedded-engine-demo-route
+spec:
+  to:
+    kind: Service
+    name: camunda-embedded-engine-demo-service
+  port:
+    targetPort: http
+---
+apiVersion: v1
+kind: Route
+metadata:
+  name: camunda-web-route
+spec:
+  to:
+    kind: Service
+    name: camunda-web-service
+  port:
+    targetPort: http

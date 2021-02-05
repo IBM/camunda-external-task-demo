@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<server description="Default server">
+
+    <!-- Enable features -->
+    <featureManager>
+        <feature>webProfile-7.0</feature>
+    </featureManager>
+
+	 <cdi12 enableImplicitBeanArchives="false"/>
+	 
+	 <library id="POSTGRESQL">
+    	<fileset dir="${shared.resource.dir}/lib.index.cache"></fileset>
+    </library>
+    
+    <dataSource id="bpmds" jndiName="jdbc/bpmds">
+		<jdbcDriver libraryRef="POSTGRESQL"/>
+		<properties  databaseName="${env.POSTGRESQL_DBNAME}" password="${env.POSTGRESQL_PASSWORD}" portNumber="${env.POSTGRESQL_PORT}" serverName="${env.POSTGRESQL_HOST}" user="${env.POSTGRESQL_USER}"/>
+	</dataSource>
+	 
+    <!-- To access this server from a remote client add a host attribute to the following element, e.g. host="*" -->
+    <httpEndpoint id="defaultHttpEndpoint"
+                  host="*"
+                  httpPort="9080"
+                  httpsPort="9443" />
+                  
+    <!-- Automatically expand WAR files and EAR files -->
+	<applicationManager autoExpand="true" />
+
+	<applicationMonitor updateTrigger="mbean" />
+	
+</server>

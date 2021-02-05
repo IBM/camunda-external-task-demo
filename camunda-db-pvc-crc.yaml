@@ -1,0 +1,15 @@
+kind: PersistentVolumeClaim
+apiVersion: v1
+metadata:
+  name: camunda-engine-db
+spec:
+  accessModes:
+    - ReadWriteMany
+  selector:
+    matchLabels:
+      volume: pv0003
+  resources:
+    requests:
+      storage: 20Gi
+  volumeName: pv0003
+  volumeMode: Filesystem
