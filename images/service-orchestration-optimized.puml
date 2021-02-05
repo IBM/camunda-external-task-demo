@@ -1,0 +1,24 @@
+@startuml
+participant "External System"
+participant "Event Bus"
+participant "Payment Retrieval"
+participant "Check Credit Card"
+participant "Check Item Info"
+participant "Charge Credit Card"
+
+"External System" -> "Payment Retrieval" : Payment Retrieval Request
+"Payment Retrieval" -> "Event Bus" : Check Credit Card Command
+"Event Bus" -> "Check Credit Card" ++: Check Credit Card Command
+return card OK
+note right: do card check
+"Event Bus" -> "Check Item Info" ++: Check Item Info Command
+return item OK
+note right: do item check
+
+
+"Payment Retrieval" -> "Event Bus" : Charge Command
+"Event Bus" -> "Charge Credit Card" ++: Charge Command
+return charge OK
+note right: do charging
+
+@enduml
