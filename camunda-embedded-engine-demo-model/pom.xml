@@ -40,7 +40,7 @@
       <!-- ============================================== -->
       <!-- =========== DEPENDENCIES VERSIONS ============ -->
       <!-- ============================================== -->
-      <guava.version>28.1-jre</guava.version>
+      <guava.version>32.0.0-jre</guava.version>
       <junit.jupiter.version>5.4.0</junit.jupiter.version>
       <mockito.version>3.1.0</mockito.version>
       <log4j.version>2.25.4</log4j.version>
